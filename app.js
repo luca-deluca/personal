@@ -1,7 +1,6 @@
 const { useState, useEffect } = React;
 const MotionLib = window.Motion || window.framerMotion || window.motion;
 
-// Fallback motion components if Framer Motion CDN fails to load
 const fallbackMotion = new Proxy(
     {},
     {
@@ -14,13 +13,8 @@ const fallbackMotion = new Proxy(
 );
 
 const motion = MotionLib?.motion || fallbackMotion;
-if (!MotionLib) {
-    console.warn('Framer Motion CDN failed to load; using fallback (no animations).');
-}
-
 const html = window.htm.bind(React.createElement);
 
-// --- CMS CONFIG / DEFAULT DATA ---
 const CMS_DEFAULTS = {
     provider: 'contentful',
     spaceId: '',
@@ -364,7 +358,7 @@ const App = () => {
     return html`
         <div className="relative min-h-screen bg-white">
             <nav className="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-                <a href="#" className="font-syne font-bold text-xl tracking-tighter text-black">LGD.FABRIC</a>
+                <a href="#" className="font-syne font-bold text-xl tracking-tighter text-black">Luca Deluca</a>
                 <div className="hidden md:flex gap-8 font-grotesk text-sm font-semibold text-gray-700">
                     <a href="#profile" className="hover:text-blue-600 transition-colors">PROFILE</a>
                     <a href="#experience" className="hover:text-blue-600 transition-colors">EXPERIENCE</a>
@@ -385,7 +379,7 @@ const App = () => {
                         className="font-syne font-extrabold leading-[0.85] tracking-tighter text-center text-black"
                         style=${{ fontSize: 'clamp(3rem, 13vw, 14rem)' }}
                     >
-                        LUCA G
+                        LUCA
                     <//>
                     <${motion.h1}
                         initial=${{ y: 50, opacity: 0 }}
