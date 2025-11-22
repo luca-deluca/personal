@@ -1,0 +1,11 @@
+# Local artifacts
+edge.png
+
+# System files
+Thumbs.db
+.DS_Store
+
+# Node/Yarn cache (not used here, but safe to ignore)
+node_modules
+npm-debug.log*
+yarn-error.log
