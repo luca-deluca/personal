@@ -27,27 +27,58 @@ const CMS_DEFAULTS = {
 const cmsConfig = { ...CMS_DEFAULTS, ...(window.CMS_CONFIG || {}) };
 const hasContentfulCreds = cmsConfig.spaceId && cmsConfig.token;
 
+const slugFromLink = (link) => {
+    if (!link) return '';
+    try {
+        const url = new URL(link, window.location.origin);
+        const parts = url.pathname.split('/').filter(Boolean);
+        const idx = parts.indexOf('projects');
+        if (idx !== -1 && parts[idx + 1]) return parts[idx + 1];
+        return parts[parts.length - 1] || '';
+    } catch (e) {
+        const parts = link.split('/').filter(Boolean);
+        return parts[parts.length - 1] || '';
+    }
+};
+
+const getBasePathFromPath = (path) => {
+    const segments = path.split('/').filter(Boolean);
+    return segments[0] === 'personal' ? '/personal' : '';
+};
+
+const initialStoredPath = () => {
+    const stored = sessionStorage.getItem('spaRedirectPath');
+    if (stored) {
+        sessionStorage.removeItem('spaRedirectPath');
+        return stored;
+    }
+    return window.location.pathname + window.location.search + window.location.hash;
+};
+
 const fallbackProjects = [
     {
         title: 'Transport Demand Forecasting',
         description: 'An end-to-end ML pipeline to forecast global transport demand, deployed on Microsoft Fabric.',
         tags: ['PySpark', 'MS Fabric', 'Machine Learning'],
         link: '#',
-        imageUrl: 'https://picsum.photos/seed/project1/400/300'
+        imageUrl: 'https://picsum.photos/seed/project1/400/300',
+        slug: 'transport-demand-forecasting'
     },
     {
         title: 'AI-Powered Anomaly Detection',
         description: 'Real-time anomaly detection system for logistics data using Azure OpenAI and SynapseML.',
         tags: ['Azure OpenAI', 'SynapseML', 'Real-time'],
         link: '#',
-        imageUrl: 'https://picsum.photos/seed/project2/400/300'
+        imageUrl: 'https://picsum.photos/seed/project2/400/300',
+        slug: 'ai-powered-anomaly-detection'
     },
     {
         title: 'Logistics Control Tower Dashboard',
         description: 'A unified Power BI dashboard providing real-time visibility into global supply chain performance.',
         tags: ['Power BI', 'Data Visualization', 'SQL'],
         link: '#',
-        imageUrl: 'https://picsum.photos/seed/project3/400/300'
+        imageUrl: 'https://picsum.photos/seed/project3/400/300',
+        slug: 'logistics-control-tower-dashboard'
     }
 ];
 
@@ -143,8 +174,17 @@ const Marquee = ({ items }) => html`
     </div>
 `;
 
-const PortfolioItem = ({ title, description, tags, imageUrl, link }) => html`
-    <a href=${link} target="_blank" rel="noopener noreferrer" className="block group">
+const PortfolioItem = ({ title, description, tags, imageUrl, link, slug, onNavigate, basePath }) => {
+    const internalPath = slug ? `${basePath}/projects/${slug}` : null;
+    const href = internalPath || link || '#';
+    const handleClick = (e) => {
+        if (internalPath && onNavigate) {
+            e.preventDefault();
+            onNavigate(internalPath);
+        }
+    };
+    return html`
+    <a href=${href} target=${internalPath ? '_self' : '_blank'} rel="noopener noreferrer" className="block group" onClick=${handleClick}>
         <${motion.div} whileHover=${{ y: -5 }} className="glass-panel p-4 rounded-2xl h-full flex flex-col transition-all duration-300 hover:border-blue-500 hover:shadow-md">
             <div className="h-48 mb-4 overflow-hidden rounded-xl bg-gray-100 relative">
                 ${imageUrl
@@ -166,17 +206,19 @@ const PortfolioItem = ({ title, description, tags, imageUrl, link }) => html`
         <//>
     </a>
 `;
-
-const PortfolioSection = ({ projects }) => {
-    return html`
-        <section id="portfolio" className="relative z-10 px-4 py-20 max-w-6xl mx-auto">
-            <${SectionHeader} title="Portfolio" number="3" />
-            <div className="grid md:grid-cols-3 gap-8">
-                ${projects.map((project, index) => html`<${PortfolioItem} key=${index} ...${project} />`)}
-            </div>
-        </section>
-    `;
 };
+
+const PortfolioSection = ({ projects, onNavigate, basePath }) => html`
+    <section id="portfolio" className="relative z-10 px-4 py-20 max-w-6xl mx-auto">
+        <${SectionHeader} title="Portfolio" number="3" />
+        <div className="grid md:grid-cols-3 gap-8">
+            ${projects.map(
+                (project, index) =>
+                    html`<${PortfolioItem} key=${index} ...${project} onNavigate=${onNavigate} basePath=${basePath} />`
+            )}
+        </div>
+    </section>
+`;
 
 const BlogItem = ({ title, date, excerpt, link }) => html`
     <a href=${link} className="block group mb-8">
@@ -191,26 +233,83 @@ const BlogItem = ({ title, date, excerpt, link }) => html`
     </a>
 `;
 
-const BlogSection = ({ posts }) => {
+const BlogSection = ({ posts }) => html`
+    <section id="blog" className="relative z-10 px-4 py-20 max-w-4xl mx-auto">
+        <${SectionHeader} title="Latest Writing" number="4" />
+        <div className="space-y-6">
+            ${posts.map((post, index) => html`<${BlogItem} key=${index} ...${post} />`)}
+        </div>
+    </section>
+`;
+
+const ProjectDetail = ({ project }) => {
+    if (!project) {
+        return html`
+            <section className="relative z-10 px-4 py-24 max-w-4xl mx-auto text-center">
+                <p className="font-syne text-3xl font-bold mb-4 text-black">Project not found</p>
+                <p className="font-grotesk text-gray-700">This project may have been moved or unpublished.</p>
+            </section>
+        `;
+    }
+
     return html`
-        <section id="blog" className="relative z-10 px-4 py-20 max-w-4xl mx-auto">
-            <${SectionHeader} title="Latest Writing" number="4" />
-            <div className="space-y-6">
-                ${posts.map((post, index) => html`<${BlogItem} key=${index} ...${post} />`)}
+        <section className="relative z-10 px-4 py-16 max-w-5xl mx-auto">
+            <p className="font-mono text-xs text-gray-500 mb-4 uppercase tracking-wide">Project</p>
+            <h1 className="font-syne text-4xl md:text-6xl font-bold text-black mb-6">${project.title}</h1>
+            <p className="font-grotesk text-lg md:text-xl text-gray-700 leading-relaxed mb-8">${project.description || ''}</p>
+            ${project.imageUrl
+                ? html`<img src=${project.imageUrl} alt=${project.title} className="w-full rounded-2xl mb-8 shadow-lg" />`
+                : null}
+            <div className="flex flex-wrap gap-2 mb-6">
+                ${(project.tags || []).map((tag, idx) =>
+                    html`<span key=${idx} className="font-mono text-xs px-3 py-1 bg-gray-100 rounded-full text-gray-600">${tag}</span>`
+                )}
             </div>
+            ${project.link
+                ? html`<a href=${project.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-grotesk font-semibold text-blue-600 hover:underline">
+                    Visit project <${ArrowRight} className="w-4 h-4" />
+                </a>`
+                : null}
         </section>
     `;
 };
 
-const App = () => {
-    const [activeExp, setActiveExp] = useState(0);
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+    throw new Error('Root element with id "root" not found.');
+}
+
+const RootApp = () => {
+    const [routePath, setRoutePath] = useState(initialStoredPath());
     const [projects, setProjects] = useState(fallbackProjects);
     const [posts, setPosts] = useState(fallbackPosts);
+    const [activeExp, setActiveExp] = useState(0);
     const navOffset = 90;
+    const basePath = getBasePathFromPath(window.location.pathname);
+
+    const parseRoute = (path) => {
+        let localPath = path;
+        const base = getBasePathFromPath(path);
+        if (base && localPath.startsWith(base)) {
+            localPath = localPath.slice(base.length);
+        }
+        const segments = localPath.split('/').filter(Boolean);
+        if (segments[0] === 'projects' && segments[1]) {
+            return { type: 'project', slug: decodeURIComponent(segments[1]) };
+        }
+        return { type: 'home' };
+    };
+
+    const navigate = (to) => {
+        window.history.pushState({}, '', to);
+        setRoutePath(to);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    };
 
     useEffect(() => {
-        const smoothLinks = Array.from(document.querySelectorAll('a[href^="#"]'))
-            .filter((link) => link.getAttribute('href') !== '#');
+        const smoothLinks = Array.from(document.querySelectorAll('a[href^="#"]')).filter(
+            (link) => link.getAttribute('href') !== '#'
+        );
 
         const handleClick = (event) => {
             const href = event.currentTarget.getAttribute('href');
@@ -229,8 +328,14 @@ const App = () => {
     }, []);
 
     useEffect(() => {
+        const onPopState = () =>
+            setRoutePath(window.location.pathname + window.location.search + window.location.hash);
+        window.addEventListener('popstate', onPopState);
+        return () => window.removeEventListener('popstate', onPopState);
+    }, []);
+
+    useEffect(() => {
         if (!hasContentfulCreds) {
-            console.info('CMS not configured; using fallback data.');
             return;
         }
 
@@ -269,7 +374,8 @@ const App = () => {
                         description: fields.description || '',
                         tags: fields.tags || [],
                         link: fields.link || '#',
-                        imageUrl: (imageRef && assets[imageRef]) || ''
+                        imageUrl: (imageRef && assets[imageRef]) || '',
+                        slug: fields.slug || slugFromLink(fields.link)
                     };
                 });
 
@@ -295,6 +401,10 @@ const App = () => {
 
         load();
     }, []);
+
+    const route = parseRoute(routePath);
+    const projectForDetail =
+        route.type === 'project' ? projects.find((p) => (p.slug || '') === route.slug) : null;
 
     const experiences = [
         {
@@ -355,7 +465,7 @@ const App = () => {
         }
     ];
 
-    return html`
+    const HomeView = html`
         <div className="relative min-h-screen bg-white">
             <nav className="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
                 <a href="#" className="font-syne font-bold text-xl tracking-tighter text-black">Luca Deluca</a>
@@ -459,7 +569,7 @@ const App = () => {
                 </div>
             </section>
 
-            <${PortfolioSection} projects=${projects} />
+            <${PortfolioSection} projects=${projects} onNavigate=${navigate} basePath=${basePath} />
 
             <${BlogSection} posts=${posts} />
 
@@ -505,15 +615,35 @@ const App = () => {
             </footer>
         </div>
     `;
+
+    if (route.type === 'project') {
+        return html`
+            <div className="relative min-h-screen bg-white">
+                <nav className="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+                    <a href=${basePath || '/'} className="font-syne font-bold text-xl tracking-tighter text-black">Luca Deluca</a>
+                    <a
+                        href="#"
+                        onClick=${(e) => {
+                            e.preventDefault();
+                            navigate(basePath || '/');
+                        }}
+                        className="font-grotesk text-sm border-2 border-black px-4 py-2 rounded-full hover:bg-black hover:text-white transition-colors font-bold"
+                    >
+                        Back to Home
+                    </a>
+                </nav>
+                <div className="pt-24">
+                    <${ProjectDetail} project=${projectForDetail} />
+                </div>
+            </div>
+        `;
+    }
+
+    return HomeView;
 };
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-    throw new Error('Root element with id "root" not found.');
-}
-
 if (ReactDOM.createRoot) {
-    ReactDOM.createRoot(rootElement).render(html`<${App} />`);
+    ReactDOM.createRoot(rootElement).render(html`<${RootApp} />`);
 } else {
-    ReactDOM.render(html`<${App} />`, rootElement);
+    ReactDOM.render(html`<${RootApp} />`, rootElement);
 }
