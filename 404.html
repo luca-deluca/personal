@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecting…</title>
+    <script>
+        (function () {
+            var path = window.location.pathname + window.location.search + window.location.hash;
+            sessionStorage.setItem('spaRedirectPath', path);
+            var base = path.startsWith('/personal/') ? '/personal/' : '/';
+            window.location.replace(base);
+        })();
+    </script>
+</head>
+<body>
+Redirecting…
+</body>
+</html>

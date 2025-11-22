@@ -41,6 +41,82 @@ const slugFromLink = (link) => {
     }
 };
 
+const toPlainText = (value) => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+        const content = value.content;
+        if (Array.isArray(content)) {
+            return content
+                .map((node) => {
+                    if (node.value) return node.value;
+                    if (Array.isArray(node.content)) {
+                        return node.content.map((child) => child.value || '').join('');
+                    }
+                    return '';
+                })
+                .join(' ')
+                .trim();
+        }
+    }
+    return '';
+};
+
+const renderRichText = (doc) => {
+    if (!doc || !Array.isArray(doc.content)) return null;
+
+    const wrapMarks = (text, marks, keyBase) => {
+        return (marks || []).reduce((acc, mark, idx) => {
+            const k = `${keyBase}-m${idx}`;
+            switch (mark.type) {
+                case 'bold':
+                    return React.createElement('strong', { key: k }, acc);
+                case 'italic':
+                    return React.createElement('em', { key: k }, acc);
+                case 'underline':
+                    return React.createElement('u', { key: k }, acc);
+                case 'code':
+                    return React.createElement('code', { key: k }, acc);
+                default:
+                    return acc;
+            }
+        }, text);
+    };
+
+    const renderNode = (node, key) => {
+        const { nodeType } = node;
+        if (nodeType === 'text') {
+            return wrapMarks(node.value || '', node.marks, key);
+        }
+
+        const children = (node.content || []).map((child, idx) =>
+            renderNode(child, `${key}-${idx}`)
+        );
+
+        switch (nodeType) {
+            case 'paragraph':
+                return html`<p key=${key} className="mb-4 leading-relaxed">${children}</p>`;
+            case 'heading-1':
+                return html`<h1 key=${key} className="text-3xl font-bold mb-4">${children}</h1>`;
+            case 'heading-2':
+                return html`<h2 key=${key} className="text-2xl font-bold mb-3">${children}</h2>`;
+            case 'heading-3':
+                return html`<h3 key=${key} className="text-xl font-bold mb-3">${children}</h3>`;
+            case 'ordered-list':
+                return html`<ol key=${key} className="list-decimal ml-5 space-y-2 mb-4">${children}</ol>`;
+            case 'unordered-list':
+                return html`<ul key=${key} className="list-disc ml-5 space-y-2 mb-4">${children}</ul>`;
+            case 'list-item':
+                return html`<li key=${key}>${children}</li>`;
+            case 'hyperlink':
+                return html`<a key=${key} href=${node.data?.uri} className="text-blue-600 hover:underline">${children}</a>`;
+            default:
+                return html`<div key=${key}>${children}</div>`;
+        }
+    };
+
+    return html`<div className="space-y-3">${doc.content.map((node, idx) => renderNode(node, `rt-${idx}`))}</div>`;
+};
+
 const getBasePathFromPath = (path) => {
     const segments = path.split('/').filter(Boolean);
     return segments[0] === 'personal' ? '/personal' : '';
@@ -256,7 +332,9 @@ const ProjectDetail = ({ project }) => {
         <section className="relative z-10 px-4 py-16 max-w-5xl mx-auto">
             <p className="font-mono text-xs text-gray-500 mb-4 uppercase tracking-wide">Project</p>
             <h1 className="font-syne text-4xl md:text-6xl font-bold text-black mb-6">${project.title}</h1>
-            <p className="font-grotesk text-lg md:text-xl text-gray-700 leading-relaxed mb-8">${project.description || ''}</p>
+            ${project.descriptionRich
+                ? renderRichText(project.descriptionRich)
+                : html`<p className="font-grotesk text-lg md:text-xl text-gray-700 leading-relaxed mb-8">${project.description || ''}</p>`}
             ${project.imageUrl
                 ? html`<img src=${project.imageUrl} alt=${project.title} className="w-full rounded-2xl mb-8 shadow-lg" />`
                 : null}
@@ -370,24 +448,28 @@ const RootApp = () => {
                     const fields = item.fields || {};
                     const imageRef = fields.image?.sys?.id;
                     return {
-                        title: fields.title || 'Untitled Project',
-                        description: fields.description || '',
-                        tags: fields.tags || [],
-                        link: fields.link || '#',
+                        title: toPlainText(fields.title) || 'Untitled Project',
+                        description: toPlainText(fields.description),
+                        descriptionRich: fields.description,
+                        tags: Array.isArray(fields.tags) ? fields.tags : [],
+                        link: typeof fields.link === 'string' ? fields.link : '#',
                         imageUrl: (imageRef && assets[imageRef]) || '',
                         slug: fields.slug || slugFromLink(fields.link)
                     };
                 });
+
+                console.log('Contentful portfolio raw:', portfolioJson);
+                console.log('Normalized portfolio items:', portfolioItems);
 
                 const blogAssets = normalizeAssets(blogJson.includes || {});
                 const blogItems = (blogJson.items || []).map((item) => {
                     const fields = item.fields || {};
                     const imageRef = fields.image?.sys?.id;
                     return {
-                        title: fields.title || 'Untitled Post',
+                        title: toPlainText(fields.title) || 'Untitled Post',
                         date: fields.date || fields.publishedAt || '',
-                        excerpt: fields.excerpt || '',
-                        link: fields.link || '#',
+                        excerpt: toPlainText(fields.excerpt),
+                        link: typeof fields.link === 'string' ? fields.link : '#',
                         imageUrl: (imageRef && blogAssets[imageRef]) || ''
                     };
                 });
