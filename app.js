@@ -138,7 +138,8 @@ const fallbackProjects = [
         tags: ['PySpark', 'MS Fabric', 'Machine Learning'],
         link: '#',
         imageUrl: 'https://picsum.photos/seed/project1/400/300',
-        slug: 'transport-demand-forecasting'
+        slug: 'transport-demand-forecasting',
+        previewText: 'An end-to-end ML pipeline to forecast global transport demand, deployed on Microsoft Fabric.'
     },
     {
         title: 'AI-Powered Anomaly Detection',
@@ -146,7 +147,8 @@ const fallbackProjects = [
         tags: ['Azure OpenAI', 'SynapseML', 'Real-time'],
         link: '#',
         imageUrl: 'https://picsum.photos/seed/project2/400/300',
-        slug: 'ai-powered-anomaly-detection'
+        slug: 'ai-powered-anomaly-detection',
+        previewText: 'Real-time anomaly detection system for logistics data using Azure OpenAI and SynapseML.'
     },
     {
         title: 'Logistics Control Tower Dashboard',
@@ -154,7 +156,8 @@ const fallbackProjects = [
         tags: ['Power BI', 'Data Visualization', 'SQL'],
         link: '#',
         imageUrl: 'https://picsum.photos/seed/project3/400/300',
-        slug: 'logistics-control-tower-dashboard'
+        slug: 'logistics-control-tower-dashboard',
+        previewText: 'A unified Power BI dashboard providing real-time visibility into global supply chain performance.'
     }
 ];
 
@@ -250,7 +253,7 @@ const Marquee = ({ items }) => html`
     </div>
 `;
 
-const PortfolioItem = ({ title, description, tags, imageUrl, link, slug, onNavigate, basePath }) => {
+const PortfolioItem = ({ title, description, previewText, tags, imageUrl, link, slug, onNavigate, basePath }) => {
     const internalPath = slug ? `${basePath}/projects/${slug}` : null;
     const href = internalPath || link || '#';
     const handleClick = (e) => {
@@ -259,6 +262,7 @@ const PortfolioItem = ({ title, description, tags, imageUrl, link, slug, onNavig
             onNavigate(internalPath);
         }
     };
+    const summary = previewText || description || '';
     return html`
     <a href=${href} target=${internalPath ? '_self' : '_blank'} rel="noopener noreferrer" className="block group" onClick=${handleClick}>
         <${motion.div} whileHover=${{ y: -5 }} className="glass-panel p-4 rounded-2xl h-full flex flex-col transition-all duration-300 hover:border-blue-500 hover:shadow-md">
@@ -273,7 +277,7 @@ const PortfolioItem = ({ title, description, tags, imageUrl, link, slug, onNavig
                 <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5"></div>
             </div>
             <h3 className="font-syne text-2xl font-bold mb-2 text-black group-hover:text-blue-600 transition-colors">${title}</h3>
-            <p className="font-grotesk text-gray-700 mb-4 flex-grow">${description}</p>
+            <p className="font-grotesk text-gray-700 mb-4 flex-grow">${summary}</p>
             <div className="flex flex-wrap gap-2 mt-auto">
                 ${tags.map(
                     (tag, idx) => html`<span key=${idx} className="font-mono text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">${tag}</span>`
@@ -451,6 +455,7 @@ const RootApp = () => {
                         title: toPlainText(fields.title) || 'Untitled Project',
                         description: toPlainText(fields.description),
                         descriptionRich: fields.description,
+                        previewText: toPlainText(fields.previewText) || toPlainText(fields.description),
                         tags: Array.isArray(fields.tags) ? fields.tags : [],
                         link: typeof fields.link === 'string' ? fields.link : '#',
                         imageUrl: (imageRef && assets[imageRef]) || '',
