@@ -600,7 +600,19 @@ const RootApp = () => {
                     </p>
                 <//>
 
-                <${motion.div} animate=${{ y: [0, 10, 0] }} transition=${{ repeat: Infinity, duration: 2 }} className="absolute bottom-10 left-1/2 transform -translate-x-1/2">
+                <${motion.div}
+                    animate=${{ y: [0, 10, 0] }}
+                    transition=${{ repeat: Infinity, duration: 2 }}
+                    className="absolute bottom-10 left-1/2 transform -translate-x-1/2 cursor-pointer"
+                    onClick=${() => {
+                        const target = document.querySelector('#profile');
+                        if (target) {
+                            const navOffset = 90;
+                            const targetTop = target.getBoundingClientRect().top + window.scrollY - navOffset;
+                            window.scrollTo({ top: targetTop, behavior: 'smooth' });
+                        }
+                    }}
+                >
                     <${ChevronDown} className="w-8 h-8 text-black opacity-50" />
                 <//>
             </section>
@@ -611,6 +623,9 @@ const RootApp = () => {
                     <div className="md:col-span-4">
                         <div className="glass-panel p-6 rounded-2xl h-full flex flex-col justify-between bg-white border-gray-200 shadow-sm">
                             <div>
+                                <div className="w-full mb-6">
+                                    <img src="Me.png" alt="Luca Deluca" className="w-full rounded-2xl shadow-sm object-cover" />
+                                </div>
                                 <p className="font-mono text-xs text-gray-500 mb-2">LOCATION</p>
                                 <p className="font-syne text-xl font-bold mb-6 text-black">Novara, Italy</p>
 
@@ -629,10 +644,10 @@ const RootApp = () => {
                     </div>
                     <div className="md:col-span-8">
                         <p className="font-grotesk text-2xl md:text-4xl leading-tight font-light text-black">
-                            Specialized in <span className="font-bold bg-yellow-200 px-1">AI-driven analytics</span> and large-scale data engineering. With over five years of experience transforming global transport operations through automation and <span className="font-bold text-blue-700">predictive insights</span>.
+                            I engineer intelligent analytics ecosystems that power global decisions. My work combines AI, automation, and scalable data architecture to deliver real-time visibility and predictive insight across millions of records.
                         </p>
                         <p className="mt-8 font-grotesk text-lg text-gray-700 leading-relaxed">
-                            Expert in Microsoft Fabric (Data Factory, Synapse, Lakehouse, Power BI), PySpark, SQL, and Azure OpenAI, I design end-to-end pipelines combining machine learning, GPT automation, and real-time dashboards.
+                            Expert in Microsoft Fabric (Data Factory, Synapse, Lakehouse, Power BI), PySpark, SQL, and Azure OpenAI, I design end-to-end pipelines combining machine learning, GPT automation, and real-time dashboards. A data analytics and innovation professional with 6+ years across energy, luxury goods, and manufacturing, I leverage Python, SQL, Power BI, Tableau, and Alteryx to build warehouses, real-time dashboards, and automated processes. I focus on improving data quality, accuracy, and timeliness while reducing processing times and resource usage, from front-end tooling to cloud-based data solutions.
                         </p>
                     </div>
                 </div>
@@ -657,8 +672,6 @@ const RootApp = () => {
             </section>
 
             <${PortfolioSection} projects=${projects} onNavigate=${navigate} basePath=${basePath} />
-
-            <${BlogSection} posts=${posts} />
 
             <section id="certifications" className="relative z-10 px-4 py-20 max-w-6xl mx-auto mb-20">
                 <${SectionHeader} title="Certifications" number="5" />
@@ -686,9 +699,8 @@ const RootApp = () => {
                         <a href="mailto:lucagdeluca@gmail.com">SAY HELLO</a>
                     </h2>
                     <div className="flex flex-col md:flex-row justify-center gap-8 font-grotesk text-lg">
-                        <a href="#" className="hover:underline hover:text-blue-400 transition-colors">LinkedIn</a>
-                        <a href="#" className="hover:underline hover:text-blue-400 transition-colors">GitHub</a>
-                        <span>+39 333 418 5950</span>
+                        <a href="https://www.linkedin.com/in/lucagdeluca/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-blue-400 transition-colors">LinkedIn</a>
+                        <a href="https://github.com/luca-deluca" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-blue-400 transition-colors">GitHub</a>
                     </div>
                     <p className="mt-20 font-mono text-xs text-gray-500">
                         © 2025 Luca G Deluca. Built with React & Tailwind CSS.
